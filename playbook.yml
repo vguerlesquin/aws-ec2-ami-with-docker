@@ -1,0 +1,35 @@
+---
+- hosts: '{{ instances }}'
+  vars:
+  become: yes
+  tasks:
+    - name: Wait for system to become reachable
+      wait_for_connection:
+        timeout: 900
+    - name: upgrade all packages
+      yum:
+        name: '*'
+        state: latest
+    - block:
+      - name: Install docker
+        yum:
+          name:
+            - docker
+          state: present
+      - name: Create docker daemon.json file
+        copy:
+          src: daemon.json
+          dest: /etc/docker/daemon.json
+          owner: root
+          group: root
+          mode: '0600'
+      - name: Start docker service
+        service:
+          name: docker
+          state: started
+          enabled: yes
+      - name: Add ec2-user to docker group
+        user:
+          name: ec2-user
+          group: docker
+          append: yes
